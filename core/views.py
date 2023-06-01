@@ -1,5 +1,4 @@
 import datetime
-
 from django.shortcuts import render
 from currency.services import ProviderService, ExchangeRateService
 

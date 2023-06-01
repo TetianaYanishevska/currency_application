@@ -1,7 +1,10 @@
+import concurrent
+from concurrent.futures import ThreadPoolExecutor
+
 import requests
 from datetime import datetime, timedelta
 
-
+from config.settings import MAX_WORKERS
 from currency.models import ExchangeRateProvider, ExchangeRate
 
 
@@ -65,10 +68,12 @@ class ExchangeRateService:
 
     def get_rates(self):
 
-        current_date = self.start_date
-        delta = timedelta(days=1)
+        dates = [self.start_date + timedelta(days=i) for i in range((self.end_date - self.start_date).days + 1)]
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            futures = [executor.submit(self.get_rate, date=date) for date in dates]
 
-        while current_date <= self.end_date:
-            currency_rates = self.get_rate(date=current_date)
-            print(currency_rates)
-            current_date += delta
+            results = []
+            for future in concurrent.futures.as_completed(futures):
+                results.append(future.result())
+
+        return results
